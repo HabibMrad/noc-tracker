@@ -11,6 +11,12 @@ from backend.auth import get_current_user
 
 router = APIRouter(prefix="/checkins", tags=["checkins"])
 
+_FORMULA_CHARS = frozenset("=+-@\t\r")
+
+def _csv_safe(value) -> str:
+    s = str(value) if value is not None else ""
+    return "'" + s if s and s[0] in _FORMULA_CHARS else s
+
 
 @router.post("", response_model=schemas.CheckInOut, status_code=201)
 def create_checkin(
@@ -143,10 +149,10 @@ def export_csv(
     ])
     for r in records:
         writer.writerow([
-            r.id, r.user.name, r.user.company,
-            r.site.name, r.site.site_id, r.site.region,
+            r.id, _csv_safe(r.user.name), _csv_safe(r.user.company),
+            _csv_safe(r.site.name), _csv_safe(r.site.site_id), _csv_safe(r.site.region),
             r.activity_type.value, r.severity.value, r.expected_duration,
-            r.is_planned_outage, r.is_routine_maintenance, r.notes or "",
+            r.is_planned_outage, r.is_routine_maintenance, _csv_safe(r.notes or ""),
             r.checked_in_at.isoformat() if r.checked_in_at else "",
             r.checked_out_at.isoformat() if r.checked_out_at else "",
             ",".join(r.affected_sites or []),
