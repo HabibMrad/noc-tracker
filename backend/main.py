@@ -1,12 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
 from backend.routers import users, imports, sites, checkins, notifications, contacts
+from backend.websocket import manager
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NOC Tracker API")
+app = FastAPI(title="NOC Tracker API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,9 +17,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router, prefix="/api")
-app.include_router(imports.router, prefix="/api")
-app.include_router(sites.router, prefix="/api")
-app.include_router(checkins.router, prefix="/api")
-app.include_router(notifications.router, prefix="/api")
-app.include_router(contacts.router, prefix="/api")
+for router in [users.router, sites.router, checkins.router,
+               notifications.router, contacts.router, imports.router]:
+    app.include_router(router, prefix="/api")
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}

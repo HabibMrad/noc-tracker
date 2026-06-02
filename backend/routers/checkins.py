@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from backend.database import get_db
 from backend import models, schemas
 from backend.auth import get_current_user
+from backend.websocket import manager
 
 router = APIRouter(prefix="/checkins", tags=["checkins"])
 
@@ -41,6 +42,20 @@ def create_checkin(
     db.add(checkin)
     db.commit()
     db.refresh(checkin)
+    # Broadcast to all WebSocket clients and persist notification for all users
+    all_users = db.query(models.User).all()
+    msg = (
+        f"🔧 {current_user.name} entered {site.name} ({site.site_id})"
+        f" — {checkin.activity_type.value} | Severity: {checkin.severity.value}"
+    )
+    for u in all_users:
+        db.add(models.Notification(user_id=u.id, message=msg))
+    db.commit()
+    import asyncio
+    try:
+        asyncio.get_event_loop().create_task(manager.broadcast(msg))
+    except RuntimeError:
+        pass  # no running event loop in sync context (tests)
     return db.query(models.CheckIn).options(
         joinedload(models.CheckIn.user), joinedload(models.CheckIn.site)
     ).filter(models.CheckIn.id == checkin.id).first()
@@ -181,6 +196,25 @@ def checkout(
     checkin.checked_out_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(checkin)
+    checkout_user = db.query(models.User).filter(models.User.id == checkin.user_id).first()
+    checkout_site = db.query(models.Site).filter(models.Site.id == checkin.site_id).first()
+    elapsed_minutes = 0
+    if checkin.checked_out_at and checkin.checked_in_at:
+        elapsed_minutes = int((checkin.checked_out_at - checkin.checked_in_at).total_seconds() / 60)
+    hours, mins = divmod(elapsed_minutes, 60)
+    msg = (
+        f"✅ {checkout_user.name} left {checkout_site.name} ({checkout_site.site_id})"
+        f" — Duration: {hours}h {mins}m"
+    )
+    all_users = db.query(models.User).all()
+    for u in all_users:
+        db.add(models.Notification(user_id=u.id, message=msg))
+    db.commit()
+    import asyncio
+    try:
+        asyncio.get_event_loop().create_task(manager.broadcast(msg))
+    except RuntimeError:
+        pass
     return db.query(models.CheckIn).options(
         joinedload(models.CheckIn.user), joinedload(models.CheckIn.site)
     ).filter(models.CheckIn.id == checkin.id).first()
