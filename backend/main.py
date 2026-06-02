@@ -1,3 +1,20 @@
-# backend/main.py  (stub — will be replaced in Task 13)
+import os
 from fastapi import FastAPI
-app = FastAPI()
+from fastapi.middleware.cors import CORSMiddleware
+from backend.database import Base, engine
+from backend.routers import users, imports
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="NOC Tracker API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(users.router, prefix="/api")
+app.include_router(imports.router, prefix="/api")
