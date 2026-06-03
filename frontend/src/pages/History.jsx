@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { format } from "date-fns"
+import { utcDate } from "../utils/date"
 import { listCheckins, exportCSV } from "../api/checkins"
 import { listSites } from "../api/sites"
+import PhotoGallery from "../components/PhotoGallery"
 
 const ACTIVITY_TYPES = ["Maintenance", "Emergency", "Inspection", "Installation", "Other"]
 const SEVERITIES = ["Low", "Medium", "High", "Critical"]
@@ -18,6 +20,7 @@ export default function History() {
     date_from: "", date_to: "",
   })
   const [page, setPage] = useState(0)
+  const [expandedRows, setExpandedRows] = useState(new Set())
 
   useEffect(() => { listSites().then(setSites) }, [])
 
@@ -31,6 +34,14 @@ export default function History() {
   const setFilter = (key, val) => {
     setFilters((f) => ({ ...f, [key]: val }))
     setPage(0)
+  }
+
+  const toggleRow = (id) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
   }
 
   const handleExport = async () => {
@@ -110,30 +121,46 @@ export default function History() {
             </tr>
           </thead>
           <tbody className="divide-y dark:divide-gray-700">
-            {records.map((r) => (
-              <tr key={r.id} className="dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            {records.flatMap((r) => [
+              <tr
+                key={r.id}
+                onClick={() => toggleRow(r.id)}
+                className="dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer select-none"
+              >
                 <td className="px-3 py-2 whitespace-nowrap">{r.user.name}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.user.company}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.site.name}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.activity_type}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.severity}</td>
                 <td className="px-3 py-2 whitespace-nowrap">
-                  {r.checked_in_at ? format(new Date(r.checked_in_at), "dd/MM/yy HH:mm") : "—"}
+                  {r.checked_in_at ? format(utcDate(r.checked_in_at), "dd/MM/yy HH:mm") : "—"}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap">
-                  {r.checked_out_at ? format(new Date(r.checked_out_at), "dd/MM/yy HH:mm") : "—"}
+                  {r.checked_out_at ? format(utcDate(r.checked_out_at), "dd/MM/yy HH:mm") : "—"}
                 </td>
                 <td className="px-3 py-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    r.checked_out_at
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                      : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
-                  }`}>
-                    {r.checked_out_at ? t("completed") : t("active")}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      r.checked_out_at
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
+                    }`}>
+                      {r.checked_out_at ? t("completed") : t("active")}
+                    </span>
+                    <span className="text-gray-400 text-xs">
+                      {expandedRows.has(r.id) ? "▲" : "📷"}
+                    </span>
+                  </div>
                 </td>
-              </tr>
-            ))}
+              </tr>,
+              expandedRows.has(r.id) && (
+                <tr key={`${r.id}-photos`} className="bg-gray-50 dark:bg-gray-800/30">
+                  <td colSpan={8} className="px-4 py-3">
+                    <PhotoGallery checkinId={r.id} />
+                  </td>
+                </tr>
+              ),
+            ].filter(Boolean))}
           </tbody>
         </table>
         {records.length === 0 && (
