@@ -69,6 +69,7 @@ class CheckIn(Base):
     checked_out_at = Column(DateTime, nullable=True)
     user = relationship("User", back_populates="checkins")
     site = relationship("Site", back_populates="checkins")
+    photos = relationship("SitePhoto", back_populates="checkin", cascade="all, delete-orphan")
 
 
 class Notification(Base):
@@ -79,6 +80,22 @@ class Notification(Base):
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     user = relationship("User", back_populates="notifications")
+
+
+class SitePhoto(Base):
+    __tablename__ = "site_photos"
+    id = Column(Integer, primary_key=True, index=True)
+    checkin_id = Column(Integer, ForeignKey("checkins.id"), nullable=False)
+    filename = Column(String, nullable=False, unique=True)
+    original_name = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    taken_at = Column(DateTime, nullable=False)
+    exif_lat = Column(Float, nullable=True)
+    exif_lng = Column(Float, nullable=True)
+    exif_device = Column(String, nullable=True)
+    distance_from_site = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    checkin = relationship("CheckIn", back_populates="photos")
 
 
 class Contact(Base):

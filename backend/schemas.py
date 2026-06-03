@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 from typing import Optional, List
 from datetime import datetime
 from backend.models import UserRole, ActivityType, Severity
@@ -114,3 +114,23 @@ class ImportResult(BaseModel):
     inserted: int
     updated: int
     skipped: int
+
+
+# --- Photos ---
+class SitePhotoOut(BaseModel):
+    id: int
+    checkin_id: int
+    filename: str
+    taken_at: datetime
+    exif_lat: Optional[float] = None
+    exif_lng: Optional[float] = None
+    exif_device: Optional[str] = None
+    distance_from_site: Optional[float] = None
+    url: str = ""
+
+    model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def compute_url(self) -> "SitePhotoOut":
+        self.url = f"/api/photos/{self.filename}"
+        return self
