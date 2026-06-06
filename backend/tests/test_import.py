@@ -81,3 +81,44 @@ def test_import_employees_confirm(client, db):
     )
     assert resp.status_code == 200
     assert resp.json()["inserted"] == 2
+
+
+def _make_sites_csv() -> io.BytesIO:
+    lines = "site_id,name,region,latitude,longitude\r\nBEY-CSV,Beirut CSV,Beirut,33.8938,35.5018\r\nTYR-CSV,Tyre CSV,South,33.2705,35.2038\r\n"
+    return io.BytesIO(lines.encode("utf-8"))
+
+
+def _make_employees_csv() -> io.BytesIO:
+    lines = "name,role,phone,email,company\r\nCSV User,technician,+961 70 999999,csv@touch.com,Touch\r\n"
+    return io.BytesIO(lines.encode("utf-8"))
+
+
+def test_import_sites_csv(client, db):
+    token = _noc_token(client, db)
+    buf = _make_sites_csv()
+    resp = client.post(
+        "/api/import/sites/confirm",
+        files={"file": ("sites.csv", buf, "text/csv")},
+        params={"mode": "skip"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    result = resp.json()
+    assert result["inserted"] == 2
+    assert result["skipped"] == 0
+    assert db.query(models.Site).filter(models.Site.site_id == "BEY-CSV").first() is not None
+
+
+def test_import_employees_csv(client, db):
+    token = _noc_token(client, db)
+    buf = _make_employees_csv()
+    resp = client.post(
+        "/api/import/employees/confirm",
+        files={"file": ("employees.csv", buf, "text/csv")},
+        params={"mode": "skip"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    result = resp.json()
+    assert result["inserted"] == 1
+    assert db.query(models.Contact).filter(models.Contact.name == "CSV User").first() is not None
