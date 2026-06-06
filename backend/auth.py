@@ -53,10 +53,18 @@ async def get_current_user(
     user = db.query(models.User).filter(models.User.id == int(user_id)).first()
     if user is None:
         raise exc
+    if user.is_active is False:
+        raise HTTPException(status_code=403, detail="Account deactivated")
     return user
 
 
 def require_noc_handler(current_user: models.User = Depends(get_current_user)) -> models.User:
     if current_user.role != models.UserRole.noc_handler:
         raise HTTPException(status_code=403, detail="NOC handler role required")
+    return current_user
+
+
+def require_admin(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if current_user.role != models.UserRole.admin:
+        raise HTTPException(status_code=403, detail="Admin role required")
     return current_user

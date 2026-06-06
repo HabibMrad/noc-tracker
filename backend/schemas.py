@@ -31,6 +31,7 @@ class UserOut(BaseModel):
     role: UserRole
     company: str
     phone: Optional[str] = None
+    is_active: bool = True
 
     model_config = {"from_attributes": True}
 
@@ -134,3 +135,24 @@ class SitePhotoOut(BaseModel):
     def compute_url(self) -> "SitePhotoOut":
         self.url = f"/api/photos/{self.filename}"
         return self
+
+
+# --- Admin ---
+class AdminUserUpdate(BaseModel):
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class TopSite(BaseModel):
+    site_id: str
+    name: str
+    total_checkins: int
+
+
+class AdminStats(BaseModel):
+    total_users: int
+    total_sites: int
+    active_checkins: int
+    users_by_role: dict
+    checkins_today: int
+    top_active_sites: List[TopSite]

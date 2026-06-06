@@ -11,6 +11,7 @@ from backend.database import Base
 class UserRole(str, enum.Enum):
     technician = "technician"
     noc_handler = "noc_handler"
+    admin = "admin"
 
 
 class ActivityType(str, enum.Enum):
@@ -38,6 +39,7 @@ class User(Base):
     role = Column(SAEnum(UserRole), nullable=False)
     company = Column(String, nullable=False)
     phone = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False, server_default="1")
     checkins = relationship("CheckIn", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
 
