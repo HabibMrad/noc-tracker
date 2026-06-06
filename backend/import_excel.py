@@ -1,11 +1,18 @@
+import csv
 import openpyxl
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Literal
 from sqlalchemy.orm import Session
 from backend import models, schemas
 
 
-def _load_rows(content: bytes) -> tuple[list[str], list[list]]:
+def _load_rows(content: bytes, filename: str = "") -> tuple[list[str], list[list]]:
+    if filename.lower().endswith(".csv"):
+        text = content.decode("utf-8-sig")
+        reader = csv.reader(StringIO(text))
+        all_rows = list(reader)
+        headers = [h.strip() for h in all_rows[0]]
+        return headers, [list(r) for r in all_rows[1:]]
     wb = openpyxl.load_workbook(BytesIO(content), read_only=True, data_only=True)
     ws = wb.active
     rows = list(ws.iter_rows(values_only=True))
@@ -13,14 +20,19 @@ def _load_rows(content: bytes) -> tuple[list[str], list[list]]:
     return headers, [list(r) for r in rows[1:]]
 
 
-def preview_xlsx(content: bytes) -> schemas.ImportPreview:
-    headers, rows = _load_rows(content)
+def preview_file(content: bytes, filename: str = "") -> schemas.ImportPreview:
+    headers, rows = _load_rows(content, filename)
     preview_rows = [[str(c) if c is not None else "" for c in r] for r in rows[:20]]
     return schemas.ImportPreview(headers=headers, rows=preview_rows, total_rows=len(rows))
 
 
-def import_sites(content: bytes, db: Session, mode: Literal["skip", "update"]) -> schemas.ImportResult:
-    headers, rows = _load_rows(content)
+# Keep old name as alias so any direct callers don't break
+def preview_xlsx(content: bytes, filename: str = "") -> schemas.ImportPreview:
+    return preview_file(content, filename)
+
+
+def import_sites(content: bytes, db: Session, mode: Literal["skip", "update"], filename: str = "") -> schemas.ImportResult:
+    headers, rows = _load_rows(content, filename)
     idx = {h: i for i, h in enumerate(headers)}
     inserted = updated = skipped = 0
     for row in rows:
@@ -48,8 +60,8 @@ def import_sites(content: bytes, db: Session, mode: Literal["skip", "update"]) -
     return schemas.ImportResult(inserted=inserted, updated=updated, skipped=skipped)
 
 
-def import_employees(content: bytes, db: Session, mode: Literal["skip", "update"]) -> schemas.ImportResult:
-    headers, rows = _load_rows(content)
+def import_employees(content: bytes, db: Session, mode: Literal["skip", "update"], filename: str = "") -> schemas.ImportResult:
+    headers, rows = _load_rows(content, filename)
     idx = {h: i for i, h in enumerate(headers)}
     inserted = updated = skipped = 0
     for row in rows:

@@ -15,7 +15,7 @@ async def preview_sites(
     _=Depends(require_noc_handler),
 ):
     content = await file.read()
-    return import_excel.preview_xlsx(content)
+    return import_excel.preview_xlsx(content, file.filename or "")
 
 
 @router.post("/sites/confirm", response_model=schemas.ImportResult)
@@ -26,7 +26,7 @@ async def confirm_sites(
     _=Depends(require_noc_handler),
 ):
     content = await file.read()
-    return import_excel.import_sites(content, db, mode)
+    return import_excel.import_sites(content, db, mode, file.filename or "")
 
 
 @router.post("/employees/preview", response_model=schemas.ImportPreview)
@@ -35,7 +35,7 @@ async def preview_employees(
     _=Depends(require_noc_handler),
 ):
     content = await file.read()
-    return import_excel.preview_xlsx(content)
+    return import_excel.preview_xlsx(content, file.filename or "")
 
 
 @router.post("/employees/confirm", response_model=schemas.ImportResult)
@@ -46,4 +46,4 @@ async def confirm_employees(
     _=Depends(require_noc_handler),
 ):
     content = await file.read()
-    return import_excel.import_employees(content, db, mode)
+    return import_excel.import_employees(content, db, mode, file.filename or "")
