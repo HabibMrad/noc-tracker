@@ -52,6 +52,7 @@ export default function Navbar() {
         {navLink("/history", t("history"))}
         {navLink("/help", t("help"))}
         {user?.role === "noc_handler" && navLink("/import", t("import"))}
+        {user?.role === "admin" && navLink("/admin", t("admin"))}
       </div>
 
       <div className="flex items-center gap-2 relative">
