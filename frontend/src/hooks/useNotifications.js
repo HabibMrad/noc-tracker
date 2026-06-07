@@ -17,12 +17,18 @@ export function useNotifications() {
     if (token) refresh()
   }, [refresh])
 
-  useWebSocket((message) => {
-    setUnreadCount((c) => c + 1)
-    setNotifications((prev) => [
-      { id: Date.now(), message, is_read: false, created_at: new Date().toISOString() },
-      ...prev.slice(0, 49),
-    ])
+  useWebSocket((raw) => {
+    try {
+      const data = JSON.parse(raw)
+      if (data.type !== "notification") return
+      setUnreadCount((c) => c + 1)
+      setNotifications((prev) => [
+        { id: Date.now(), message: data.message, is_read: false, created_at: new Date().toISOString() },
+        ...prev.slice(0, 49),
+      ])
+    } catch (_) {
+      // non-JSON frame — ignore
+    }
   })
 
   const markAllRead = useCallback(async () => {
