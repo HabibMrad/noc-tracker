@@ -17,6 +17,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+self.addEventListener('push', (event) => {
+  let data = { title: 'NOC Tracker', body: '' }
+  try {
+    data = event.data ? event.data.json() : data
+  } catch (_) {}
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url && 'focus' in client) return client.focus()
+      }
+      if (clients.openWindow) return clients.openWindow('/')
+    })
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
   if (event.request.url.includes('/api/') || event.request.url.includes('/ws')) return

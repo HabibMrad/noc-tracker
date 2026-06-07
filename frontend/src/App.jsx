@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { useEffect } from "react"
 import { AuthProvider, useAuth } from "./hooks/useAuth"
+import { usePushNotifications } from "./hooks/usePushNotifications"
 import Navbar from "./components/Navbar"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
@@ -22,6 +23,7 @@ function PrivateRoute({ children, requireNoc = false, requireAdmin = false }) {
 
 function AppRoutes() {
   const { user } = useAuth()
+  usePushNotifications(user)
 
   useEffect(() => {
     const theme = localStorage.getItem("theme")
@@ -41,7 +43,7 @@ function AppRoutes() {
           <Route path="/checkin" element={<PrivateRoute><CheckIn /></PrivateRoute>} />
           <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
           <Route path="/help" element={<PrivateRoute><Help /></PrivateRoute>} />
-          <Route path="/import" element={<PrivateRoute requireNoc><Import /></PrivateRoute>} />
+          <Route path="/import" element={<PrivateRoute requireAdmin><Import /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute requireAdmin><Admin /></PrivateRoute>} />
         </Routes>
       </main>

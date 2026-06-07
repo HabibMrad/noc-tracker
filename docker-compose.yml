@@ -9,6 +9,9 @@ services:
       - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
       - DATABASE_URL=sqlite:////data/noc.db
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@touch.com.lb}
     volumes:
       - db_data:/data
       - ./backend/uploads:/app/uploads
@@ -21,6 +24,7 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=/api
+        - VITE_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
     networks:
       - noc_net
     depends_on:

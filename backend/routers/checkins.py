@@ -9,6 +9,7 @@ from backend.database import get_db
 from backend import models, schemas
 from backend.auth import get_current_user
 from backend.websocket import manager
+from backend.routers.push import send_push_to_all
 
 router = APIRouter(prefix="/checkins", tags=["checkins"])
 
@@ -56,6 +57,7 @@ def create_checkin(
         asyncio.get_event_loop().create_task(manager.broadcast(msg))
     except RuntimeError:
         pass  # no running event loop in sync context (tests)
+    send_push_to_all(db, "🔧 Site Entry", f"{current_user.name} entered {site.name} — {checkin.activity_type.value}")
     return db.query(models.CheckIn).options(
         joinedload(models.CheckIn.user), joinedload(models.CheckIn.site)
     ).filter(models.CheckIn.id == checkin.id).first()
@@ -215,6 +217,7 @@ def checkout(
         asyncio.get_event_loop().create_task(manager.broadcast(msg))
     except RuntimeError:
         pass
+    send_push_to_all(db, "✅ Site Exit", f"{checkout_user.name} left {checkout_site.name} — {hours}h {mins}m")
     return db.query(models.CheckIn).options(
         joinedload(models.CheckIn.user), joinedload(models.CheckIn.site)
     ).filter(models.CheckIn.id == checkin.id).first()
