@@ -2,28 +2,33 @@ import { useRef, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { format, formatDistanceToNow } from "date-fns"
 
-export default function NotificationDropdown({ notifications, unreadCount, onMarkAllRead, onClose }) {
+export default function NotificationDropdown({ notifications, onMarkAllRead, onClose }) {
   const { t } = useTranslation()
   const ref = useRef()
 
   useEffect(() => {
     const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
     document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    document.addEventListener("touchstart", handler)
+    return () => {
+      document.removeEventListener("mousedown", handler)
+      document.removeEventListener("touchstart", handler)
+    }
   }, [onClose])
 
   return (
     <div
       ref={ref}
-      className="fixed right-4 top-16 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-[9999]"
+      style={{ position: "fixed", top: "60px", right: "16px", left: "16px", zIndex: 9999, maxHeight: "60vh", overflowY: "auto" }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700"
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
         <span className="font-semibold text-sm dark:text-white">{t("notifications")}</span>
         <button onClick={onMarkAllRead} className="text-xs text-blue-500 hover:underline">
           {t("mark_all_read")}
         </button>
       </div>
-      <ul className="max-h-72 overflow-y-auto divide-y dark:divide-gray-700">
+      <ul className="divide-y dark:divide-gray-700">
         {notifications.length === 0 ? (
           <li className="px-4 py-4 text-sm text-gray-400 text-center">{t("no_notifications")}</li>
         ) : (
