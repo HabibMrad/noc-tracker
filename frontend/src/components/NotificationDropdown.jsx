@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { formatDistanceToNow } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 
 export default function NotificationDropdown({ notifications, unreadCount, onMarkAllRead, onClose }) {
   const { t } = useTranslation()
@@ -15,7 +15,7 @@ export default function NotificationDropdown({ notifications, unreadCount, onMar
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-12 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50"
+      className="fixed right-4 top-16 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-[9999]"
     >
       <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
         <span className="font-semibold text-sm dark:text-white">{t("notifications")}</span>
@@ -31,7 +31,10 @@ export default function NotificationDropdown({ notifications, unreadCount, onMar
             <li key={n.id} className={`px-4 py-3 text-sm ${n.is_read ? "opacity-60" : "font-medium"} dark:text-gray-200`}>
               <p>{n.message}</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                {(() => {
+                  const d = new Date(n.created_at.endsWith("Z") ? n.created_at : n.created_at + "Z")
+                  return `${format(d, "dd MMM yyyy, hh:mm aa")} · ${formatDistanceToNow(d, { addSuffix: true })}`
+                })()}
               </p>
             </li>
           ))

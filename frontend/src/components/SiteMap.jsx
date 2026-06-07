@@ -47,7 +47,7 @@ export default function SiteMap({ sites = [], activeSessions = [] }) {
                 fillOpacity: 0.85,
                 weight: isActive ? 3 : 1,
               }}
-              className={isActive ? "leaflet-active-marker" : ""}
+              className=""
             >
               <Popup>
                 <div className="text-sm min-w-[160px]">
