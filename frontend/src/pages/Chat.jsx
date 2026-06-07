@@ -63,7 +63,8 @@ export default function Chat() {
     }
   }
 
-  const isOwn = (msg) => msg.user?.id === user?.id
+  const isOwn = (msg) =>
+    msg.user?.id === user?.id || Number(msg.user?.id) === Number(user?.id)
 
   const fmt = (iso) => {
     const d = new Date(iso.endsWith("Z") ? iso : iso + "Z")
