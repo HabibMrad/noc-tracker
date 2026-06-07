@@ -26,14 +26,15 @@ export default function Chat() {
         const data = JSON.parse(raw)
         if (data.type !== "chat") return
         setMessages((prev) => {
-          if (prev.some((m) => m.id === data.id)) return prev
+          // deduplicate using Number() coercion to avoid int/string mismatch
+          if (prev.some((m) => Number(m.id) === Number(data.id))) return prev
           return [
             ...prev,
             {
               id: data.id,
               content: data.content,
               created_at: data.created_at,
-              user: { id: data.user_id, name: data.user, username: data.user },
+              user: { id: Number(data.user_id), name: data.user, username: data.user },
             },
           ]
         })
@@ -48,7 +49,7 @@ export default function Chat() {
     setInput("")
     try {
       await sendMessage(text)
-      // WS broadcast will deliver the message to all tabs including this one
+      // state is updated exclusively via the WS broadcast (all clients including sender)
     } catch (_) {
       setInput(text)
     } finally {
@@ -63,8 +64,7 @@ export default function Chat() {
     }
   }
 
-  const isOwn = (msg) =>
-    msg.user?.id === user?.id || Number(msg.user?.id) === Number(user?.id)
+  const isOwn = (msg) => Number(msg.user?.id) === Number(user?.id)
 
   const fmt = (iso) => {
     const d = new Date(iso.endsWith("Z") ? iso : iso + "Z")
