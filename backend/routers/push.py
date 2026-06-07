@@ -12,7 +12,7 @@ from backend.auth import get_current_user
 logger = logging.getLogger(__name__)
 
 _PRIVATE_KEY_B64 = os.getenv("VAPID_PRIVATE_KEY", "")
-VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:admin@touch.com.lb")
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:habib.mrad.19383@gmail.com")
 
 # Decode base64-encoded PEM back to PEM string
 def _get_private_pem() -> str:

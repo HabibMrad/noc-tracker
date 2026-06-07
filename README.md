@@ -81,7 +81,7 @@ App runs at http://localhost
 | name | Yes | Habib Mrad |
 | role | Yes | technician or noc_handler |
 | phone | Yes | +961 70 123456 |
-| email | Yes | habib@touch.com.lb |
+| email | Yes | habib.mrad.19383@gmail.com |
 | company | Yes | Touch or PowerTech - IPT |
 
 ## Roles
