@@ -94,5 +94,9 @@ export default {
     top_sites: "أكثر 5 مواقع زيارةً",
     deactivated: "معطّل",
     total_sites: "إجمالي المواقع",
+    add_contact: "إضافة جهة اتصال",
+    delete_contact: "حذف",
+    contact_added: "تمت إضافة جهة الاتصال",
+    contact_deleted: "تم حذف جهة الاتصال",
   },
 }

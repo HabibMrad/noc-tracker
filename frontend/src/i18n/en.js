@@ -94,5 +94,9 @@ export default {
     top_sites: "Top 5 Most Visited Sites",
     deactivated: "Deactivated",
     total_sites: "Total Sites",
+    add_contact: "Add Contact",
+    delete_contact: "Delete",
+    contact_added: "Contact added successfully",
+    contact_deleted: "Contact deleted",
   },
 }

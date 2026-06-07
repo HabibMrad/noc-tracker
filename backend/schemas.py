@@ -137,6 +137,16 @@ class SitePhotoOut(BaseModel):
         return self
 
 
+# --- Contacts ---
+class ContactCreate(BaseModel):
+    name: str
+    phone: str
+    email: Optional[str] = None
+    role: str
+    company: str
+    shift: Optional[str] = None
+
+
 # --- Admin ---
 class AdminUserUpdate(BaseModel):
     role: Optional[str] = None
