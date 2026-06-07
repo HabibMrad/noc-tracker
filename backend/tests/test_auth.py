@@ -79,3 +79,38 @@ def test_login_fails_wrong_password(client, db):
     })
     resp = client.post("/api/auth/login", json={"username": "habib", "password": "wrong"})
     assert resp.status_code == 401
+
+
+def _register_and_login(client, db):
+    _seed_employee(db)
+    client.post("/api/auth/register", json={
+        "name": "Habib Mrad", "username": "habib",
+        "email": "habib@test.com", "password": "pass1234",
+    })
+    resp = client.post("/api/auth/login", json={"username": "habib", "password": "pass1234"})
+    return resp.json()
+
+
+def test_refresh_returns_new_tokens(client, db):
+    tokens = _register_and_login(client, db)
+    resp = client.post("/api/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "access_token" in data
+    assert "refresh_token" in data
+    # new access token must authenticate against /me
+    me_resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {data['access_token']}"})
+    assert me_resp.status_code == 200
+    assert me_resp.json()["username"] == "habib"
+
+
+def test_refresh_fails_with_access_token(client, db):
+    tokens = _register_and_login(client, db)
+    # passing an access token (no "type":"refresh") must be rejected
+    resp = client.post("/api/auth/refresh", json={"refresh_token": tokens["access_token"]})
+    assert resp.status_code == 401
+
+
+def test_refresh_fails_with_invalid_token(client, db):
+    resp = client.post("/api/auth/refresh", json={"refresh_token": "garbage.token.value"})
+    assert resp.status_code == 401

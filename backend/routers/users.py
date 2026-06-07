@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend import models, schemas
+from jose import JWTError, jwt
 from backend.auth import (
     hash_password, verify_password,
     create_access_token, create_refresh_token,
-    get_current_user,
+    get_current_user, SECRET_KEY, ALGORITHM,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -44,6 +45,27 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if user.is_active is False:
         raise HTTPException(status_code=403, detail="Account deactivated")
+    return schemas.TokenResponse(
+        access_token=create_access_token({"sub": str(user.id)}),
+        refresh_token=create_refresh_token({"sub": str(user.id)}),
+    )
+
+
+@router.post("/refresh", response_model=schemas.TokenResponse)
+def refresh(payload: schemas.RefreshRequest, db: Session = Depends(get_db)):
+    invalid = HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    try:
+        data = jwt.decode(payload.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise invalid
+    if data.get("type") != "refresh":
+        raise invalid
+    user_id = data.get("sub")
+    if user_id is None:
+        raise invalid
+    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    if not user or user.is_active is False:
+        raise invalid
     return schemas.TokenResponse(
         access_token=create_access_token({"sub": str(user.id)}),
         refresh_token=create_refresh_token({"sub": str(user.id)}),
