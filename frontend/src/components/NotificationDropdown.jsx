@@ -10,19 +10,21 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
     const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
     document.addEventListener("mousedown", handler)
     document.addEventListener("touchstart", handler)
+    window.addEventListener("scroll", onClose, { passive: true, capture: true })
     return () => {
       document.removeEventListener("mousedown", handler)
       document.removeEventListener("touchstart", handler)
+      window.removeEventListener("scroll", onClose, { capture: true })
     }
   }, [onClose])
 
   return (
     <div
       ref={ref}
-      style={{ position: "fixed", top: "60px", right: "16px", left: "16px", zIndex: 9999, maxHeight: "60vh", overflowY: "auto" }}
+      style={{ position: "fixed", bottom: "60px", right: "16px", left: "16px", zIndex: 9999, maxHeight: "60vh", overflowY: "auto" }}
       className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700"
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+      <div className="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 z-10">
         <span className="font-semibold text-sm dark:text-white">{t("notifications")}</span>
         <button onClick={onMarkAllRead} className="text-xs text-blue-500 hover:underline">
           {t("mark_all_read")}

@@ -7,23 +7,27 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend import models
-from backend.auth import get_current_user
+from backend.auth import get_current_user, require_admin
 
 logger = logging.getLogger(__name__)
 
 _PRIVATE_KEY_B64 = os.getenv("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:habib.mrad.19383@gmail.com")
 
-# Decode base64-encoded PEM back to PEM string
+router = APIRouter(prefix="/push", tags=["push"])
+
+
 def _get_private_pem() -> str:
     if not _PRIVATE_KEY_B64:
+        logger.warning("VAPID_PRIVATE_KEY env var is empty — push disabled")
         return ""
     try:
-        return base64.b64decode(_PRIVATE_KEY_B64).decode()
-    except Exception:
-        return _PRIVATE_KEY_B64  # already raw PEM
-
-router = APIRouter(prefix="/push", tags=["push"])
+        pem = base64.b64decode(_PRIVATE_KEY_B64).decode()
+        logger.debug("VAPID private key loaded OK (%d chars)", len(pem))
+        return pem
+    except Exception as exc:
+        logger.warning("VAPID_PRIVATE_KEY base64 decode failed (%s) — trying raw", exc)
+        return _PRIVATE_KEY_B64
 
 
 class SubscribeRequest(BaseModel):
@@ -55,6 +59,7 @@ def subscribe(
             auth=body.auth,
         ))
     db.commit()
+    logger.info("Push subscription saved for user %s (endpoint …%s)", current_user.id, body.endpoint[-20:])
     return {"ok": True}
 
 
@@ -77,12 +82,17 @@ def send_push_to_all(db: Session, title: str, body: str) -> None:
     try:
         from pywebpush import webpush, WebPushException
     except ImportError:
-        logger.warning("pywebpush not installed — skipping push notifications")
+        logger.error("pywebpush not installed — push notifications disabled")
         return
 
     subs = db.query(models.PushSubscription).all()
-    dead_ids = []
+    if not subs:
+        logger.debug("No push subscriptions in DB — skipping broadcast")
+        return
+
+    logger.info("Sending push '%s' to %d subscription(s)", title, len(subs))
     payload = json.dumps({"title": title, "body": body})
+    dead_ids = []
 
     for sub in subs:
         try:
@@ -95,16 +105,71 @@ def send_push_to_all(db: Session, title: str, body: str) -> None:
                 vapid_private_key=private_pem,
                 vapid_claims={"sub": VAPID_SUBJECT},
             )
+            logger.debug("Push sent OK to sub %d", sub.id)
         except Exception as e:
-            status = getattr(getattr(e, "response", None), "status_code", None)
+            resp = getattr(e, "response", None)
+            status = getattr(resp, "status_code", None)
+            body_text = getattr(resp, "text", "") if resp else ""
+            logger.error(
+                "Push FAILED sub=%d status=%s err=%s body=%s",
+                sub.id, status, e, body_text[:200],
+            )
             if status in (404, 410):
                 dead_ids.append(sub.id)
-            else:
-                logger.debug("push failed for sub %s: %s", sub.id, e)
 
     for sub_id in dead_ids:
         db.query(models.PushSubscription).filter(
             models.PushSubscription.id == sub_id
         ).delete()
     if dead_ids:
+        logger.info("Removed %d dead subscription(s)", len(dead_ids))
         db.commit()
+
+
+@router.get("/test")
+def test_push(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin),
+):
+    private_pem = _get_private_pem()
+    if not private_pem:
+        raise HTTPException(status_code=503, detail="VAPID_PRIVATE_KEY not configured")
+
+    try:
+        from pywebpush import webpush
+    except ImportError:
+        raise HTTPException(status_code=503, detail="pywebpush not installed")
+
+    subs = db.query(models.PushSubscription).all()
+    if not subs:
+        return {"sent": 0, "total": 0, "detail": "No subscriptions in DB"}
+
+    payload = json.dumps({"title": "🔔 Test Push", "body": "Push notifications are working!"})
+    sent = 0
+    errors = []
+
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                },
+                data=payload,
+                vapid_private_key=private_pem,
+                vapid_claims={"sub": VAPID_SUBJECT},
+            )
+            sent += 1
+        except Exception as e:
+            resp = getattr(e, "response", None)
+            status = getattr(resp, "status_code", None)
+            body_text = getattr(resp, "text", "")[:200] if resp else str(e)
+            errors.append({"sub_id": sub.id, "status": status, "error": body_text})
+
+    return {
+        "sent": sent,
+        "total": len(subs),
+        "errors": errors,
+        "vapid_subject": VAPID_SUBJECT,
+        "vapid_key_loaded": bool(private_pem),
+    }
