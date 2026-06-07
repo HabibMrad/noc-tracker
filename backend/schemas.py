@@ -170,3 +170,17 @@ class AdminStats(BaseModel):
     users_by_role: dict
     checkins_today: int
     top_active_sites: List[TopSite]
+
+
+# --- Chat ---
+class MessageOut(BaseModel):
+    id: int
+    user: UserOut
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MessageCreate(BaseModel):
+    content: str

@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from backend.database import Base, engine
-from backend.routers import users, imports, sites, checkins, notifications, contacts, photos, admin, push
+from backend.routers import users, imports, sites, checkins, notifications, contacts, photos, admin, push, chat
 from backend.websocket import manager
 
 Base.metadata.create_all(bind=engine)
@@ -19,7 +19,7 @@ app.add_middleware(
 
 for router in [users.router, sites.router, checkins.router,
                notifications.router, contacts.router, imports.router, photos.router,
-               admin.router, push.router]:
+               admin.router, push.router, chat.router]:
     app.include_router(router, prefix="/api")
 
 

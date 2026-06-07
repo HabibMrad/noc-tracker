@@ -16,7 +16,9 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str, msg_type: str = "notification"):
-        payload = json.dumps({"type": msg_type, "message": message})
+        await self.broadcast_raw(json.dumps({"type": msg_type, "message": message}))
+
+    async def broadcast_raw(self, payload: str):
         dead = []
         for connection in self.active_connections:
             try:

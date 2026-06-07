@@ -111,6 +111,15 @@ class Contact(Base):
     shift = Column(String, nullable=True)
 
 
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    user = relationship("User")
+
+
 class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
     id = Column(Integer, primary_key=True)
