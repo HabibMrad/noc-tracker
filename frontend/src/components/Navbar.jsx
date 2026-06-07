@@ -51,7 +51,6 @@ export default function Navbar() {
         {navLink("/checkin", t("check_in"))}
         {navLink("/history", t("history"))}
         {navLink("/help", t("help"))}
-        {navLink("/chat", t("chat"))}
         {user?.role === "admin" && navLink("/import", t("import"))}
         {user?.role === "admin" && navLink("/admin", t("admin"))}
       </div>

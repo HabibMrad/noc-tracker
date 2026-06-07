@@ -98,8 +98,5 @@ export default {
     delete_contact: "Delete",
     contact_added: "Contact added successfully",
     contact_deleted: "Contact deleted",
-    chat: "Chat",
-    type_a_message: "Type a message…",
-    no_messages_yet: "No messages yet. Say hello!",
   },
 }

@@ -98,8 +98,5 @@ export default {
     delete_contact: "حذف",
     contact_added: "تمت إضافة جهة الاتصال",
     contact_deleted: "تم حذف جهة الاتصال",
-    chat: "الدردشة",
-    type_a_message: "اكتب رسالة…",
-    no_messages_yet: "لا رسائل بعد. قل مرحبا!",
   },
 }

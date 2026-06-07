@@ -11,7 +11,6 @@ import History from "./pages/History"
 import Help from "./pages/Help"
 import Import from "./pages/Import"
 import Admin from "./pages/Admin"
-import Chat from "./pages/Chat"
 
 function PrivateRoute({ children, requireNoc = false, requireAdmin = false }) {
   const { user, loading } = useAuth()
@@ -46,7 +45,6 @@ function AppRoutes() {
           <Route path="/help" element={<PrivateRoute><Help /></PrivateRoute>} />
           <Route path="/import" element={<PrivateRoute requireAdmin><Import /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute requireAdmin><Admin /></PrivateRoute>} />
-          <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
         </Routes>
       </main>
     </BrowserRouter>
