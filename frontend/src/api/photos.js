@@ -14,4 +14,4 @@ export const getPhotos = (checkinId) =>
 export const deletePhoto = (photoId) =>
   client.delete(`/photos/${photoId}`)
 
-export const getPhotoUrl = (filename) => `/api/photos/${filename}`
+export const getPhotoUrl = (filename) => `${window.location.origin}/api/photos/${filename}`

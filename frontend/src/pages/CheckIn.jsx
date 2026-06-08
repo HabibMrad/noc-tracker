@@ -34,9 +34,40 @@ const EMPTY_FORM = {
   notes: "",
 }
 
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 function AffectedSitesPicker({ value, onChange, sites }) {
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
+  const [gpsLoading, setGpsLoading] = useState(false)
+
+  const addNearest = () => {
+    if (!navigator.geolocation) return
+    setGpsLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords
+        const nearest = [...sites]
+          .map((s) => ({ ...s, _d: haversineKm(latitude, longitude, s.latitude, s.longitude) }))
+          .sort((a, b) => a._d - b._d)
+          .slice(0, 5)
+          .map((s) => s.site_id)
+          .filter((id) => !value.includes(id))
+        onChange([...value, ...nearest])
+        setGpsLoading(false)
+      },
+      () => setGpsLoading(false),
+      { timeout: 8000 }
+    )
+  }
 
   const filtered = query.trim()
     ? sites.filter(
@@ -57,6 +88,16 @@ function AffectedSitesPicker({ value, onChange, sites }) {
 
   return (
     <div className="space-y-2">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={addNearest}
+          disabled={gpsLoading}
+          className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-lg"
+        >
+          {gpsLoading ? "…" : "📍 Add 5 nearest"}
+        </button>
+      </div>
       {value.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {value.map((id) => (
@@ -180,6 +221,19 @@ export default function CheckIn() {
     setMyActiveSession(null)
     setSuccess("✅ Checked out successfully")
     setTimeout(() => setSuccess(""), 4000)
+  }
+
+  if (user?.role === "noc_handler") {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <h2 className="text-lg font-bold dark:text-white mb-4">{t("check_in")}</h2>
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl p-6 text-center">
+          <p className="text-yellow-800 dark:text-yellow-200 font-medium">
+            👁 NOC Handlers are view-only. Check-in is for technicians only.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

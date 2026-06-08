@@ -1,13 +1,39 @@
 import os
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from backend.database import Base, engine
+from apscheduler.schedulers.background import BackgroundScheduler
+from backend.database import Base, engine, SessionLocal
 from backend.routers import users, imports, sites, checkins, notifications, contacts, photos, admin, push
 from backend.websocket import manager
+from backend.email_report import send_activity_report
+
+logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="NOC Tracker API", version="1.0.0")
+
+def _report_job():
+    db = SessionLocal()
+    try:
+        send_activity_report(db)
+    except Exception as e:
+        logger.error("Scheduled report failed: %s", e)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(_report_job, "interval", hours=8, id="email_report")
+    scheduler.start()
+    logger.info("APScheduler started — email report every 8h")
+    yield
+    scheduler.shutdown(wait=False)
+    logger.info("APScheduler stopped")
+
+
+app = FastAPI(title="NOC Tracker API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

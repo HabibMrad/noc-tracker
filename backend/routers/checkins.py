@@ -26,6 +26,8 @@ def create_checkin(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    if current_user.role == models.UserRole.noc_handler:
+        raise HTTPException(status_code=403, detail="NOC handlers cannot perform check-in/out")
     site = db.query(models.Site).filter(models.Site.id == payload.site_id).first()
     if not site:
         raise HTTPException(status_code=404, detail="Site not found")
@@ -188,10 +190,12 @@ def checkout(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    if current_user.role == models.UserRole.noc_handler:
+        raise HTTPException(status_code=403, detail="NOC handlers cannot perform check-in/out")
     checkin = db.query(models.CheckIn).filter(models.CheckIn.id == checkin_id).first()
     if not checkin:
         raise HTTPException(status_code=404, detail="Check-in not found")
-    if checkin.user_id != current_user.id and current_user.role != models.UserRole.noc_handler:
+    if checkin.user_id != current_user.id and current_user.role != models.UserRole.admin:
         raise HTTPException(status_code=403, detail="Cannot check out another user")
     if checkin.checked_out_at:
         raise HTTPException(status_code=400, detail="Already checked out")
