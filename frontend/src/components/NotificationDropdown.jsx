@@ -11,16 +11,27 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
   const { t } = useTranslation()
   const ref = useRef()
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
-  const isDark = () => document.documentElement.classList.contains("dark")
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"))
 
+  // Track dark mode changes via MutationObserver
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setDark(document.documentElement.classList.contains("dark"))
+    })
+    observer.observe(document.documentElement, { attributeFilter: ["class"] })
+    return () => observer.disconnect()
+  }, [])
+
+  // Track screen size / orientation changes
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener("resize", onResize)
     return () => window.removeEventListener("resize", onResize)
   }, [])
 
+  // Desktop: close on outside click/tap
   useEffect(() => {
-    if (isMobile) return  // mobile uses X button only — no outside-tap dismiss
+    if (isMobile) return
     const handler = (e) => { if (!ref.current?.contains(e.target)) onClose() }
     document.addEventListener("mousedown", handler)
     document.addEventListener("touchstart", handler)
@@ -30,35 +41,60 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
     }
   }, [isMobile, onClose])
 
+  const bg = dark ? "#1f2937" : "#ffffff"
+  const border = dark ? "#374151" : "#e5e7eb"
+  const textPrimary = dark ? "#f9fafb" : "#111827"
+  const textMuted = dark ? "#9ca3af" : "#6b7280"
+  const divider = dark ? "#374151" : "#f3f4f6"
+
   const mobileStyle = {
     position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 9999, overflowY: "auto",
     display: "flex", flexDirection: "column",
-    backgroundColor: isDark() ? "#1f2937" : "#ffffff",
+    backgroundColor: bg,
+    backdropFilter: "none",
   }
 
   const desktopStyle = {
     position: "fixed", top: "60px", right: "16px",
     width: "380px", maxHeight: "70vh", overflowY: "auto",
     zIndex: 9999,
+    backgroundColor: bg,
+    backdropFilter: "none",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+    border: `1px solid ${border}`,
+  }
+
+  const headerStyle = {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "12px 16px",
+    borderBottom: `1px solid ${border}`,
+    backgroundColor: bg,
+    position: isMobile ? "sticky" : "static",
+    top: 0, zIndex: 10,
   }
 
   const content = (
     <>
-      {/* Header */}
       <div
-        className={`flex items-center justify-between px-4 py-3 border-b dark:border-gray-700 bg-white dark:bg-gray-800 ${isMobile ? "sticky top-0 z-10" : ""}`}
+        style={headerStyle}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
       >
-        <span className="font-semibold text-sm dark:text-white">{t("notifications")}</span>
-        <div className="flex items-center gap-3">
-          <button onClick={onMarkAllRead} className="text-xs text-blue-500 hover:underline">
+        <span style={{ fontWeight: 600, fontSize: "14px", color: textPrimary }}>
+          {t("notifications")}
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button
+            onClick={onMarkAllRead}
+            style={{ fontSize: "12px", color: "#3b82f6", background: "none", border: "none", cursor: "pointer" }}
+          >
             {t("mark_all_read")}
           </button>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none font-bold"
+            style={{ fontSize: "20px", lineHeight: 1, color: textMuted, background: "none", border: "none", cursor: "pointer", fontWeight: "bold" }}
             aria-label="Close"
           >
             ×
@@ -66,19 +102,31 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
         </div>
       </div>
 
-      {/* List */}
       <ul
-        className="divide-y dark:divide-gray-700 flex-1"
+        style={{ listStyle: "none", margin: 0, padding: 0 }}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
       >
         {notifications.length === 0 ? (
-          <li className="px-4 py-6 text-sm text-gray-400 text-center">{t("no_notifications")}</li>
+          <li style={{ padding: "24px 16px", textAlign: "center", fontSize: "14px", color: textMuted }}>
+            {t("no_notifications")}
+          </li>
         ) : (
-          notifications.map((n) => (
-            <li key={n.id} className={`px-4 py-3 text-sm ${n.is_read ? "opacity-60" : "font-medium"} dark:text-gray-200`}>
-              <p>{n.message}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{fmtTime(n.created_at)}</p>
+          notifications.map((n, i) => (
+            <li
+              key={n.id}
+              style={{
+                padding: "12px 16px",
+                fontSize: "14px",
+                color: textPrimary,
+                borderBottom: i < notifications.length - 1 ? `1px solid ${divider}` : "none",
+                opacity: n.is_read ? 0.6 : 1,
+                fontWeight: n.is_read ? 400 : 500,
+                backgroundColor: bg,
+              }}
+            >
+              <p style={{ margin: "0 0 2px 0" }}>{n.message}</p>
+              <p style={{ margin: 0, fontSize: "11px", color: textMuted }}>{fmtTime(n.created_at)}</p>
             </li>
           ))
         )}
@@ -90,7 +138,6 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
     return (
       <div
         style={mobileStyle}
-        className="bg-white dark:bg-gray-800"
         onTouchStart={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         onScroll={(e) => e.stopPropagation()}
@@ -101,11 +148,7 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
   }
 
   return (
-    <div
-      ref={ref}
-      style={desktopStyle}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700"
-    >
+    <div ref={ref} style={desktopStyle}>
       {content}
     </div>
   )
