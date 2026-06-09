@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from backend.database import Base, engine, SessionLocal
 from backend.routers import users, imports, sites, checkins, notifications, contacts, photos, admin, push
 from backend.websocket import manager
@@ -25,9 +26,11 @@ def _report_job():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler = BackgroundScheduler()
-    scheduler.add_job(_report_job, "interval", hours=8, id="email_report")
+    scheduler.add_job(_report_job, CronTrigger(hour=0, minute=0), id="report_midnight")
+    scheduler.add_job(_report_job, CronTrigger(hour=8, minute=0), id="report_morning")
+    scheduler.add_job(_report_job, CronTrigger(hour=16, minute=0), id="report_afternoon")
     scheduler.start()
-    logger.info("APScheduler started — email report every 8h")
+    logger.info("APScheduler started — email reports at 00:00, 08:00, 16:00")
     yield
     scheduler.shutdown(wait=False)
     logger.info("APScheduler stopped")
