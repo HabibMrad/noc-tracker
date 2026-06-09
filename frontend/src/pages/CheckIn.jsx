@@ -356,15 +356,20 @@ export default function CheckIn() {
         </div>
 
         {/* Toggles */}
-        {[
-          ["is_planned_outage", "planned_outage"],
-          ["is_routine_maintenance", "routine_maintenance"],
-        ].map(([fieldName, labelKey]) => (
-          <label key={fieldName} className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" {...register(fieldName)} className="w-4 h-4 rounded accent-blue-600" />
-            <span className="text-sm dark:text-gray-300">{t(labelKey)}</span>
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" {...register("is_planned_outage")} className="w-4 h-4 rounded accent-blue-600" />
+            <span className="text-sm dark:text-gray-300">{t("planned_outage")}</span>
           </label>
-        ))}
+          <p className="text-xs text-gray-400 italic ml-6 mt-0.5">{t("planned_outage_hint")}</p>
+        </div>
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" {...register("is_routine_maintenance")} className="w-4 h-4 rounded accent-blue-600" />
+            <span className="text-sm dark:text-gray-300">{t("routine_maintenance")}</span>
+          </label>
+          <p className="text-xs text-gray-400 italic ml-6 mt-0.5">{t("routine_maintenance_hint")}</p>
+        </div>
 
         {/* Notes */}
         <div>
