@@ -25,6 +25,7 @@ export default {
     routine_maintenance: "Routine Maintenance",
     routine_maintenance_hint: "Check if this is regular upkeep or a pre-scheduled maintenance task",
     notes: "Notes",
+    notes_placeholder: "Add any additional notes...",
     check_out: "Check Out",
     active_sessions: "Active Sessions",
     detect_nearest: "Detect Nearest Sites",

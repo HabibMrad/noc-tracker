@@ -25,6 +25,7 @@ export default {
     routine_maintenance: "صيانة روتينية",
     routine_maintenance_hint: "ضع علامة إذا كانت هذه صيانة دورية أو مهمة صيانة مجدولة مسبقاً",
     notes: "ملاحظات",
+    notes_placeholder: "أضف أي ملاحظات إضافية...",
     check_out: "تسجيل المغادرة",
     active_sessions: "الجلسات النشطة",
     detect_nearest: "اكتشاف أقرب المواقع",
