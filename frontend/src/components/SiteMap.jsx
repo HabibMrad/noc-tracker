@@ -2,7 +2,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet"
 import { useEffect } from "react"
 import { useMap } from "react-leaflet"
 import { formatDistanceToNow } from "date-fns"
-import { getActivityColor } from "../utils/activityColors"
+import { getActivityColor, normalizeActivity } from "../utils/activityColors"
 
 const LEBANON_CENTER = [33.8938, 35.5018]
 const LEBANON_BOUNDS = [[33.05, 35.1], [34.7, 36.7]]
@@ -37,8 +37,9 @@ export default function SiteMap({ sites = [], activeSessions = [] }) {
         {sites.map((site) => {
           const isActive = activeSet.has(site.site_id)
           const session = activeSessions.find((s) => s.site.site_id === site.site_id)
+          const actType = normalizeActivity(session?.activity_type)
           const actColor = isActive && session
-            ? getActivityColor(session.activity_type).bg
+            ? getActivityColor(actType).bg
             : "#3b82f6"
 
           return (
@@ -59,7 +60,7 @@ export default function SiteMap({ sites = [], activeSessions = [] }) {
                   <p style={{ fontWeight: 700, margin: "0 0 2px 0" }}>{site.name}</p>
                   <p style={{ color: "#6b7280", margin: "0 0 4px 0" }}>{site.site_id} · {site.region}</p>
                   {isActive && session && (() => {
-                    const c = getActivityColor(session.activity_type)
+                    const c = getActivityColor(actType)
                     return (
                       <div style={{ marginTop: "4px" }}>
                         <div style={{ marginBottom: "4px" }}>
@@ -73,7 +74,7 @@ export default function SiteMap({ sites = [], activeSessions = [] }) {
                           borderRadius: "9999px",
                           fontWeight: 500,
                         }}>
-                          {session.activity_type}
+                          {actType}
                         </span>
                         <span style={{ marginLeft: "6px", fontSize: "12px", color: "#6b7280" }}>
                           · {session.severity}

@@ -6,5 +6,12 @@ export const ACTIVITY_COLORS = {
   Other:        { bg: '#6b7280', light: '#f3f4f6', text: '#1f2937' },
 }
 
+// Normalize "maintenance" → "Maintenance" so API enum names and values both match
+export const normalizeActivity = (type) => {
+  if (!type) return "Other"
+  const s = String(type)
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 export const getActivityColor = (type) =>
-  ACTIVITY_COLORS[type] || ACTIVITY_COLORS.Other
+  ACTIVITY_COLORS[normalizeActivity(type)] || ACTIVITY_COLORS.Other

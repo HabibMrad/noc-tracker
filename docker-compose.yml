@@ -20,7 +20,7 @@ services:
       - REPORT_EMAIL_FROM=${REPORT_EMAIL_FROM}
     volumes:
       - db_data:/data
-      - ./backend/uploads:/app/uploads
+      - ./backend/uploads:/app/backend/uploads
     networks:
       - noc_net
     restart: unless-stopped

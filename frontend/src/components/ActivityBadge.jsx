@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { getActivityColor } from "../utils/activityColors"
+import { getActivityColor, normalizeActivity } from "../utils/activityColors"
 
 export default function ActivityBadge({ type }) {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"))
@@ -12,6 +12,7 @@ export default function ActivityBadge({ type }) {
     return () => obs.disconnect()
   }, [])
 
+  const label = normalizeActivity(type)
   const c = getActivityColor(type)
   const style = dark
     ? { backgroundColor: c.bg + "33", color: c.bg, border: `1px solid ${c.bg}66` }
@@ -27,7 +28,7 @@ export default function ActivityBadge({ type }) {
       whiteSpace: "nowrap",
       display: "inline-block",
     }}>
-      {type || "Other"}
+      {label}
     </span>
   )
 }
