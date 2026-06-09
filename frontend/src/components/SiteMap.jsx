@@ -19,6 +19,7 @@ export default function SiteMap({ sites = [], activeSessions = [] }) {
   const activeSet = new Set(activeSessions.map((s) => s.site.site_id))
 
   return (
+    <div style={{ isolation: "isolate", position: "relative", zIndex: 0 }}>
     <div className="h-72 md:h-96 rounded-xl overflow-hidden border dark:border-gray-700">
       <MapContainer
         center={LEBANON_CENTER}
@@ -89,6 +90,7 @@ export default function SiteMap({ sites = [], activeSessions = [] }) {
           )
         })}
       </MapContainer>
+    </div>
     </div>
   )
 }
