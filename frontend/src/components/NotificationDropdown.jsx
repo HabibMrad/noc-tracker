@@ -11,6 +11,7 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
   const { t } = useTranslation()
   const ref = useRef()
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const isDark = () => document.documentElement.classList.contains("dark")
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -33,6 +34,7 @@ export default function NotificationDropdown({ notifications, onMarkAllRead, onC
     position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 9999, overflowY: "auto",
     display: "flex", flexDirection: "column",
+    backgroundColor: isDark() ? "#1f2937" : "#ffffff",
   }
 
   const desktopStyle = {
