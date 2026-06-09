@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next"
 import { formatDistanceToNow, differenceInMinutes } from "date-fns"
 import { checkout } from "../api/checkins"
 import { useAuth } from "../hooks/useAuth"
+import ActivityBadge from "./ActivityBadge"
 
 function statusColor(session) {
   const elapsed = differenceInMinutes(new Date(), new Date(session.checked_in_at))
@@ -50,7 +51,7 @@ export default function ActiveSessionsTable({ sessions, onRefresh }) {
               <td className="px-3 py-2 whitespace-nowrap">
                 {s.site.name} <span className="text-gray-400">({s.site.site_id})</span>
               </td>
-              <td className="px-3 py-2 whitespace-nowrap">{s.activity_type}</td>
+              <td className="px-3 py-2 whitespace-nowrap"><ActivityBadge type={s.activity_type} /></td>
               <td className="px-3 py-2 whitespace-nowrap">{s.severity}</td>
               <td className="px-3 py-2 whitespace-nowrap">
                 {formatDistanceToNow(new Date(s.checked_in_at), { addSuffix: true })}

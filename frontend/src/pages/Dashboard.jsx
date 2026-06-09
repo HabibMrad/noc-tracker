@@ -4,6 +4,7 @@ import { listSites } from "../api/sites"
 import { listCheckins } from "../api/checkins"
 import SiteMap from "../components/SiteMap"
 import ActiveSessionsTable from "../components/ActiveSessionsTable"
+import ActivityLegend from "../components/ActivityLegend"
 import { useWebSocket } from "../hooks/useWebSocket"
 
 export default function Dashboard() {
@@ -35,6 +36,7 @@ export default function Dashboard() {
         </span>
       </h2>
       <SiteMap sites={sites} activeSessions={activeSessions} />
+      <ActivityLegend />
       <h3 className="font-semibold dark:text-white">{t("active_sessions")}</h3>
       <ActiveSessionsTable sessions={activeSessions} onRefresh={refresh} />
     </div>

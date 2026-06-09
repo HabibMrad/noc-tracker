@@ -5,6 +5,7 @@ import { utcDate } from "../utils/date"
 import { listCheckins, exportCSV } from "../api/checkins"
 import { listSites } from "../api/sites"
 import PhotoGallery from "../components/PhotoGallery"
+import ActivityBadge from "../components/ActivityBadge"
 
 const ACTIVITY_TYPES = ["Maintenance", "Emergency", "Inspection", "Installation", "Other"]
 const SEVERITIES = ["Low", "Medium", "High", "Critical"]
@@ -130,7 +131,7 @@ export default function History() {
                 <td className="px-3 py-2 whitespace-nowrap">{r.user.name}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.user.company}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.site.name}</td>
-                <td className="px-3 py-2 whitespace-nowrap">{r.activity_type}</td>
+                <td className="px-3 py-2 whitespace-nowrap"><ActivityBadge type={r.activity_type} /></td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.severity}</td>
                 <td className="px-3 py-2 whitespace-nowrap">
                   {r.checked_in_at ? format(utcDate(r.checked_in_at), "dd/MM/yy HH:mm") : "—"}
