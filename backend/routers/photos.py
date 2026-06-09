@@ -130,7 +130,6 @@ def list_photos(
 def serve_photo(
     filename: str,
     db: Session = Depends(get_db),
-    _: models.User = Depends(get_current_user),
 ):
     photo = db.query(models.SitePhoto).filter(models.SitePhoto.filename == filename).first()
     if not photo:
