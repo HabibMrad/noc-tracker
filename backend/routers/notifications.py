@@ -14,6 +14,8 @@ def get_notifications(
     db: Session = Depends(get_db),
     _: models.User = Depends(get_current_user),
 ):
+    # Fetch enough rows so that after emitting up to 2 events per record we can
+    # still return 50 combined events sorted by time.
     checkins = (
         db.query(models.CheckIn)
         .options(joinedload(models.CheckIn.user), joinedload(models.CheckIn.site))
@@ -21,24 +23,41 @@ def get_notifications(
         .limit(50)
         .all()
     )
-    result = []
+    events = []
     for c in checkins:
-        if c.checked_out_at:
-            elapsed = int((c.checked_out_at - c.checked_in_at).total_seconds() / 60)
-            h, m = divmod(elapsed, 60)
-            msg = (
-                f"✅ {c.user.name} left {c.site.name} ({c.site.site_id})"
-                f" — Duration: {h}h {m}m"
-            )
-            ts = c.checked_out_at
-        else:
-            msg = (
+        # Check-in event — always emitted
+        checkin_ts = c.checked_in_at
+        if checkin_ts.tzinfo is None:
+            checkin_ts = checkin_ts.replace(tzinfo=timezone.utc)
+        events.append(schemas.NotificationOut(
+            id=c.id * 2,
+            message=(
                 f"🔧 {c.user.name} entered {c.site.name} ({c.site.site_id})"
                 f" — {c.activity_type.value} | Severity: {c.severity.value}"
-            )
-            ts = c.checked_in_at
-        result.append(schemas.NotificationOut(id=c.id, message=msg, is_read=False, created_at=ts))
-    return result
+            ),
+            is_read=False,
+            created_at=checkin_ts,
+        ))
+
+        # Checkout event — only when the session is complete
+        if c.checked_out_at:
+            checkout_ts = c.checked_out_at
+            if checkout_ts.tzinfo is None:
+                checkout_ts = checkout_ts.replace(tzinfo=timezone.utc)
+            elapsed = int((c.checked_out_at - c.checked_in_at).total_seconds() / 60)
+            h, m = divmod(elapsed, 60)
+            events.append(schemas.NotificationOut(
+                id=c.id * 2 + 1,
+                message=(
+                    f"✅ {c.user.name} left {c.site.name} ({c.site.site_id})"
+                    f" — Duration: {h}h {m}m"
+                ),
+                is_read=False,
+                created_at=checkout_ts,
+            ))
+
+    events.sort(key=lambda e: e.created_at, reverse=True)
+    return events[:50]
 
 
 @router.get("/unread-count")
