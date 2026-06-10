@@ -17,6 +17,14 @@ export function useNotifications() {
     if (token) refresh()
   }, [refresh])
 
+  // Fallback poll every 60 s in case WebSocket is disconnected
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (localStorage.getItem("access_token")) refresh()
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [refresh])
+
   useWebSocket((raw) => {
     try {
       const data = JSON.parse(raw)

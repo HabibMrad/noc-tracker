@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { listSites } from "../api/sites"
 import { listCheckins } from "../api/checkins"
@@ -7,10 +7,14 @@ import ActiveSessionsTable from "../components/ActiveSessionsTable"
 import ActivityLegend from "../components/ActivityLegend"
 import { useWebSocket } from "../hooks/useWebSocket"
 
+const AUTO_REFRESH_INTERVAL = 30 // seconds
+
 export default function Dashboard() {
   const { t } = useTranslation()
   const [sites, setSites] = useState([])
   const [activeSessions, setActiveSessions] = useState([])
+  const [secondsSince, setSecondsSince] = useState(0)
+  const lastRefreshRef = useRef(Date.now())
 
   const refresh = useCallback(async () => {
     const [s, sessions] = await Promise.all([
@@ -19,12 +23,30 @@ export default function Dashboard() {
     ])
     setSites(s)
     setActiveSessions(sessions)
+    lastRefreshRef.current = Date.now()
+    setSecondsSince(0)
   }, [])
 
+  // Initial load
   useEffect(() => {
     refresh()
   }, [refresh])
 
+  // Auto-refresh every 30 s
+  useEffect(() => {
+    const id = setInterval(refresh, AUTO_REFRESH_INTERVAL * 1000)
+    return () => clearInterval(id)
+  }, [refresh])
+
+  // "Last updated X s ago" ticker — updates every second
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSecondsSince(Math.floor((Date.now() - lastRefreshRef.current) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // WebSocket push also triggers refresh
   useWebSocket(() => refresh())
 
   return (
@@ -35,9 +57,26 @@ export default function Dashboard() {
           {t("active")}: {activeSessions.length}
         </span>
       </h2>
+
       <SiteMap sites={sites} activeSessions={activeSessions} />
       <ActivityLegend />
-      <h3 className="font-semibold dark:text-white">{t("active_sessions")}</h3>
+
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold dark:text-white">{t("active_sessions")}</h3>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            Updated {secondsSince}s ago
+          </span>
+          <button
+            onClick={refresh}
+            title="Refresh"
+            className="text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-base leading-none"
+          >
+            🔄
+          </button>
+        </div>
+      </div>
+
       <ActiveSessionsTable sessions={activeSessions} onRefresh={refresh} />
     </div>
   )
