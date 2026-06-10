@@ -9,55 +9,65 @@ from backend.auth import get_current_user
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
+def _utc(dt):
+    return dt.replace(tzinfo=timezone.utc) if dt and dt.tzinfo is None else dt
+
+
 @router.get("", response_model=List[schemas.NotificationOut])
 def get_notifications(
     db: Session = Depends(get_db),
     _: models.User = Depends(get_current_user),
 ):
-    # Fetch enough rows so that after emitting up to 2 events per record we can
-    # still return 50 combined events sorted by time.
-    checkins = (
+    opts = [joinedload(models.CheckIn.user), joinedload(models.CheckIn.site)]
+
+    # --- List 1: check-in events (50 most recent by checked_in_at) ---
+    recent_checkins = (
         db.query(models.CheckIn)
-        .options(joinedload(models.CheckIn.user), joinedload(models.CheckIn.site))
+        .options(*opts)
         .order_by(models.CheckIn.checked_in_at.desc())
         .limit(50)
         .all()
     )
-    events = []
-    for c in checkins:
-        # Check-in event — always emitted
-        checkin_ts = c.checked_in_at
-        if checkin_ts.tzinfo is None:
-            checkin_ts = checkin_ts.replace(tzinfo=timezone.utc)
-        events.append(schemas.NotificationOut(
+    checkin_events = [
+        schemas.NotificationOut(
             id=c.id * 2,
             message=(
                 f"🔧 {c.user.name} entered {c.site.name} ({c.site.site_id})"
                 f" — {c.activity_type.value} | Severity: {c.severity.value}"
             ),
             is_read=False,
-            created_at=checkin_ts,
+            created_at=_utc(c.checked_in_at),
+        )
+        for c in recent_checkins
+    ]
+
+    # --- List 2: checkout events (50 most recent by checked_out_at) ---
+    recent_checkouts = (
+        db.query(models.CheckIn)
+        .options(*opts)
+        .filter(models.CheckIn.checked_out_at.isnot(None))
+        .order_by(models.CheckIn.checked_out_at.desc())
+        .limit(50)
+        .all()
+    )
+    checkout_events = []
+    for c in recent_checkouts:
+        elapsed = int((c.checked_out_at - c.checked_in_at).total_seconds() / 60)
+        h, m = divmod(elapsed, 60)
+        checkout_events.append(schemas.NotificationOut(
+            id=c.id * 2 + 1,
+            message=(
+                f"✅ {c.user.name} left {c.site.name} ({c.site.site_id})"
+                f" — Duration: {h}h {m}m"
+            ),
+            is_read=False,
+            created_at=_utc(c.checked_out_at),
         ))
 
-        # Checkout event — only when the session is complete
-        if c.checked_out_at:
-            checkout_ts = c.checked_out_at
-            if checkout_ts.tzinfo is None:
-                checkout_ts = checkout_ts.replace(tzinfo=timezone.utc)
-            elapsed = int((c.checked_out_at - c.checked_in_at).total_seconds() / 60)
-            h, m = divmod(elapsed, 60)
-            events.append(schemas.NotificationOut(
-                id=c.id * 2 + 1,
-                message=(
-                    f"✅ {c.user.name} left {c.site.name} ({c.site.site_id})"
-                    f" — Duration: {h}h {m}m"
-                ),
-                is_read=False,
-                created_at=checkout_ts,
-            ))
-
-    events.sort(key=lambda e: e.created_at, reverse=True)
-    return events[:50]
+    # Merge, sort newest-first, cap at 50
+    combined = checkin_events + checkout_events
+    combined.sort(key=lambda e: e.created_at, reverse=True)
+    return combined[:50]
 
 
 @router.get("/unread-count")
